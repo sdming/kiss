@@ -1,0 +1,15 @@
+require
+length [min...max]
+range [min...max]
+type (date,bool,int...)
+email
+url
+number
+digits
+equal
+in
+equalTo(other)
+contain
+match
+[custome] (need registe)
+

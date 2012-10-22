@@ -1,0 +1,15 @@
+where
+union
+distinct
+take
+skip
+sum
+avg
+max
+min
+single
+first
+latest
+reverse
+contains
+cast
