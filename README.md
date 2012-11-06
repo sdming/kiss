@@ -1,7 +1,11 @@
 kiss
 ====
 
-kiss is utils of golang reflection
+## version
+
+v0.3
+
+kiss is utils baseon golang reflection
 
 ## Installation
 
@@ -11,19 +15,17 @@ kiss is utils of golang reflection
 
 `import "github.com/sdming/kiss" `
 
-or  
-
-`import "github.com/sdming/kiss/gotype" `
-
 ## Example
     
 For more example usage, please see `*_test.go` or `example.go`
 
 ## todo
 
-1. typ.Field(i) is very slow , cache it ?  
-2. add validate ?
-
+1. typ.Field(i) is slow  ?  
+2. cache reflect.type ?
+3. add config package, base on kson 
+4. refactor
+5. remove unexported field 
 
 ## License
 
