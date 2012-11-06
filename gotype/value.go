@@ -6,6 +6,7 @@ package gotype
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 )
 
 // Value is a alias of reflect.Value
@@ -14,6 +15,25 @@ type Value reflect.Value
 // get underlying value of *struct
 func ValueOf(i interface{}) Value {
 	return Value(reflect.ValueOf(i))
+}
+
+func (v Value) IsEmptyValue() bool {
+	rv := v.Value()
+	switch rv.Kind() {
+	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
+		return rv.Len() == 0
+	case reflect.Bool:
+		return !rv.Bool()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return rv.Int() == 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return rv.Uint() == 0
+	case reflect.Float32, reflect.Float64:
+		return rv.Float() == 0
+	case reflect.Interface, reflect.Ptr:
+		return rv.IsNil()
+	}
+	return false
 }
 
 // return string
@@ -194,8 +214,102 @@ func (v Value) Set(x reflect.Value) {
 	}
 }
 
+// Parse value from a string
+func (rv Value) Parse(s string) {
+
+	v := rv.Value()
+	if !v.IsValid() || !v.CanSet() {
+		return
+	}
+
+	if v.Kind() == reflect.String {
+		v.SetString(s)
+		return
+	}
+	switch v.Kind() {
+	case reflect.Bool:
+		if b, err := strconv.ParseBool(s); err == nil {
+			v.SetBool(b)
+		}
+	case reflect.Int:
+		if i, err := strconv.ParseInt(s, 0, 32); err == nil {
+			v.SetInt(i)
+		}
+	case reflect.Int8:
+		if i, err := strconv.ParseInt(s, 0, 8); err == nil {
+			v.SetInt(i)
+		}
+	case reflect.Int16:
+		if i, err := strconv.ParseInt(s, 0, 16); err == nil {
+			v.SetInt(i)
+		}
+	case reflect.Int32:
+		if i, err := strconv.ParseInt(s, 0, 32); err == nil {
+			v.SetInt(i)
+		}
+	case reflect.Int64:
+		if i, err := strconv.ParseInt(s, 0, 64); err == nil {
+			v.SetInt(i)
+		}
+	case reflect.Uint:
+		if i, err := strconv.ParseUint(s, 0, 0); err == nil {
+			v.SetUint(i)
+		}
+	case reflect.Uint8:
+		if i, err := strconv.ParseUint(s, 0, 8); err == nil {
+			v.SetUint(i)
+		}
+	case reflect.Uint16:
+		if i, err := strconv.ParseUint(s, 0, 16); err == nil {
+			v.SetUint(i)
+		}
+	case reflect.Uint32:
+		if i, err := strconv.ParseUint(s, 0, 32); err == nil {
+			v.SetUint(i)
+		}
+	case reflect.Uint64:
+		if i, err := strconv.ParseUint(s, 0, 64); err == nil {
+			v.SetUint(i)
+		}
+	case reflect.Float32:
+		if i, err := strconv.ParseFloat(s, 32); err == nil {
+			v.SetFloat(i)
+		}
+	case reflect.Float64:
+		if i, err := strconv.ParseFloat(s, 64); err == nil {
+			v.SetFloat(i)
+		}
+	case reflect.Interface:
+		// if i, err := strconv.ParseFloat(s, 64); err != nil {
+		// 	v.Set(reflect.ValueOf(n))
+		// }
+		v.Set(reflect.ValueOf(string(s)))
+	default:
+		//TODO
+	}
+}
+
+func (v Value) Format() string {
+	inner := v.Underlying()
+	switch UnderlyingKind(inner) {
+	case reflect.Bool:
+		return strconv.FormatBool(inner.Bool())
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return strconv.FormatInt(inner.Int(), 10)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return strconv.FormatUint(inner.Uint(), 10)
+	case reflect.Float32:
+		return strconv.FormatFloat(inner.Float(), 'g', -1, 32)
+	case reflect.Float64:
+		return strconv.FormatFloat(inner.Float(), 'g', -1, 64)
+	case reflect.String:
+		return inner.String()
+	}
+	return fmt.Sprint(v.Value().Interface())
+}
+
 // prase value from a string
-func (v Value) FromStr(str string) {
+func (v Value) FromStr_Todel(str string) {
 
 	inner := v.Value()
 	if !inner.IsValid() || !inner.CanSet() || !inner.IsValid() {
