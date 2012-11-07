@@ -17,7 +17,7 @@ type T1 struct {
 
 type T2 struct {
 	T2_float       float32
-	T2_array_uint8 [3]uint8
+	T2_array_uint8 [3]uint
 	A_array_T3     [2]T3
 }
 

@@ -297,25 +297,3 @@ func Unmarshal(data []byte, v interface{}) error {
 	}
 	return node.Value(v)
 }
-
-// type IndentWriter struct {
-// 	bytes.Buffer
-// 	Deep   int
-// 	Indent string
-// }
-
-// func (w *IndentWriter) Outer() {
-// 	if w.Deep > 0 {
-// 		w.Deep--
-// 	}
-// }
-
-// func (w *IndentWriter) Inner() {
-// 	w.Deep++
-// }
-
-// func (w *IndentWriter) WriteIndent() {
-// 	for i := 0; i < w.Deep; i++ {
-// 		w.WriteString(w.Indent)
-// 	}
-// }

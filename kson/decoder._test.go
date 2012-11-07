@@ -4,10 +4,9 @@
 package kson_test
 
 import (
-	"fmt"
 	"github.com/sdming/kiss/kson"
+	"github.com/sdming/kiss/ktest"
 	"reflect"
-	"strings"
 	"testing"
 )
 
@@ -107,22 +106,13 @@ func TestParsePoco(t *testing.T) {
 			t.Errorf("get string value of filed %s error", name)
 			continue
 		}
-		if strings.TrimSpace(actual) != strings.TrimSpace(fmt.Sprint(fv.Interface())) {
-			t.Errorf("poco unmarshalerror, field:[%s]\n actual:%s \n expect:%s \n", name, actual, fmt.Sprint(fv.Interface()))
-		}
+		ktest.EqualAsString(t, name, fv.Interface(), actual)
 	}
 
-	if n.ChildBool("Bool") != true {
-		t.Errorf("parse bool fail")
-	}
-
-	if n.ChildInt("Int") != -1024 {
-		t.Errorf("parse int fail")
-	}
-
-	if n.ChildFloat("Float") != 6.4 {
-		t.Errorf("parse float fail")
-	}
+	ktest.EqualAsString(t, "ChildBool", true, n.ChildBool("Bool"))
+	ktest.EqualAsString(t, "ChildInt", -1024, n.ChildInt("Int"))
+	ktest.EqualAsString(t, "ChildFloat", 6.4, n.ChildFloat("Float"))
+	ktest.EqualAsString(t, "ChildString", "[0,1,2,3,4,5,6,7,8,9]", n.ChildString("Quote"))
 
 	var newPoco Poco
 	err = n.Value(&newPoco)
@@ -135,11 +125,7 @@ func TestParsePoco(t *testing.T) {
 	for i := 0; i < typ.NumField(); i++ {
 		f := typ.Field(i)
 		name := f.Name
-
-		if strings.TrimSpace(fmt.Sprint(rv.FieldByName(name).Interface())) !=
-			strings.TrimSpace(fmt.Sprint(pv.FieldByName(name).Interface())) {
-			t.Errorf("poco unmarshal error, field [%s]", name)
-		}
+		ktest.EqualAsString(t, "poco unmarshal "+name, rv.FieldByName(name).Interface(), pv.FieldByName(name).Interface())
 	}
 }
 
@@ -174,9 +160,7 @@ func TestParseList(t *testing.T) {
 
 	for i, v := range expect {
 		actual := string(n.List[i].Literal)
-		if strings.TrimSpace(actual) != strings.TrimSpace(v) {
-			t.Errorf("list parse error, index:[%d]\n actual:%s \n expect:%s \n", i, actual, v)
-		}
+		ktest.Equal(t, "list parse", v, actual)
 	}
 
 	newList := []string{}
@@ -187,9 +171,7 @@ func TestParseList(t *testing.T) {
 	}
 	for i, v := range expect {
 		actual := newList[i]
-		if strings.TrimSpace(actual) != strings.TrimSpace(v) {
-			t.Errorf("lis unmarshal error, index:[%d]\n actual:%s \n expect:%s \n", i, actual, v)
-		}
+		ktest.Equal(t, "list unmarshal", v, actual)
 	}
 }
 
@@ -218,7 +200,7 @@ func TestParseHash(t *testing.T) {
 		"float":  "6.4",
 		"bool":   "true",
 		"string": "string",
-		"text": ` 
+		"text": `
 				I'm not a great programmer,
 				I'm a pretty good programmer with great habits.
 				`,
@@ -235,9 +217,9 @@ func TestParseHash(t *testing.T) {
 			t.Errorf("get string value of child %s error", key)
 			continue
 		}
-		if strings.TrimSpace(actual) != strings.TrimSpace(v) {
-			t.Errorf("hash parse error, key:[%s]\n actual:%s \n expect:%s \n", key, actual, v)
-		}
+
+		ktest.Equal(t, "hash parse", v, actual)
+
 	}
 
 	newMap := map[string]string{}
@@ -247,9 +229,7 @@ func TestParseHash(t *testing.T) {
 		return
 	}
 	for key, v := range newMap {
-		if strings.TrimSpace(expect[key]) != strings.TrimSpace(v) {
-			t.Errorf("hask unmarshal error, key:[%s]\n actual:%s \n expect:%s \n", key, v, expect[key])
-		}
+		ktest.Equal(t, "hask unmarshal "+key, v, expect[key])
 	}
 
 }
@@ -286,7 +266,7 @@ func TestParseConfig(t *testing.T) {
 		}
 
 		Env:	{
-			auth:		http://auth.io]
+			auth:		http://auth.io
 			browser:	ie, chrome, firefox, safari
 			key:
 		}
@@ -299,4 +279,151 @@ func TestParseConfig(t *testing.T) {
 		return
 	}
 
+	ktest.Equal(t, "Log_Level", "debug", n.ChildString("Log_Level"))
+	ktest.Equal(t, "Listen", 8000, n.ChildInt("Listen"))
+	ktest.Equal(t, "role-user", "user", n.MustChild("Roles").List[0].ChildString("Name"))
+	ktest.Equal(t, "role-user-allow", "/user", n.MustChild("Roles").List[0].MustChild("Allow").List[0].Literal)
+	ktest.Equal(t, "dblog-host", "127.0.0.1", n.MustChild("Db_Log").ChildString("Host"))
+	ktest.Equal(t, "env-auth", "http://auth.io", n.MustChild("Env").Hash["auth"].Literal)
+
+	var newConfig Config
+	err = kson.Unmarshal([]byte(config), &newConfig)
+	if err != nil {
+		t.Error("config unmarshal error", err)
+		return
+	}
+
+	ktest.Equal(t, "Log_Level", "debug", newConfig.Log_Level)
+	ktest.Equal(t, "Listen", 8000, newConfig.Listen)
+	ktest.Equal(t, "role-user", "user", newConfig.Roles[0].Name)
+	ktest.Equal(t, "role-user-allow", "/user", newConfig.Roles[0].Allow[0])
+	ktest.Equal(t, "dblog-host", "127.0.0.1", newConfig.Db_Log.Host)
+	ktest.Equal(t, "env-auth", "http://auth.io", newConfig.Env["auth"])
 }
+
+func TestUnmarshalStruct(t *testing.T) {
+	data := `	
+		 {
+			T1_bool:true
+			T1_int:10			
+			T1_map:{
+				a:{
+					A_array_T3:[
+						{
+							T3_int:2031
+							T3_string:T3_string_2031
+						}		
+						{
+							T3_int:2032
+							T3_string:T3_string_2032
+						}		
+					]			
+					T2_array_uint8:[
+						2001
+						2002
+						2003
+					]
+					T2_float:2000
+				}
+		
+				b:{
+					A_array_T3:[
+						{
+							T3_int:2131
+							T3_string:T3_string_2131
+						}
+		
+						{
+							T3_int:2132
+							T3_string:T3_string_2132
+						}
+		
+					]					
+					T2_array_uint8:[
+						2101
+						2102
+						2103
+					]
+					T2_float:2100
+				}		
+			}
+		
+			T1_t3: {
+					T3_int:31
+					T3_string:T3_string_31
+				}
+			T1_string:T1_string
+		}
+	`
+	var v T1
+	err := kson.Unmarshal([]byte(data), &v)
+	if err != nil {
+		t.Error("Unmarshal struct", err)
+		return
+	}
+
+	ktest.Equal(t, "T1_bool", true, v.T1_bool)
+	ktest.Equal(t, "T1_int", 10, v.T1_int)
+	ktest.Equal(t, "T1_string", "T1_string", v.T1_string)
+	ktest.Equal(t, "T1_t3.T3_int", 31, v.T1_t3.T3_int)
+	ktest.Equal(t, "T1_t3.T3_string", "T3_string_31", v.T1_t3.T3_string)
+	ktest.Equal(t, "T1_map_a.T2_float", float32(2000), v.T1_map["a"].T2_float)
+	ktest.Equal(t, "T1_map_a.T2_array_uint8", [3]uint{2001, 2002, 2003}, v.T1_map["a"].T2_array_uint8)
+	ktest.Equal(t, "T1_map_a.A_array_T3.T3_int", 2031, v.T1_map["a"].A_array_T3[0].T3_int)
+	ktest.Equal(t, "T1_map_a.A_array_T3.T3_string", "T3_string_2031", v.T1_map["a"].A_array_T3[0].T3_string)
+
+}
+
+// func performance() {
+
+// 	t := newConfig()
+// 	var b []byte
+// 	var err error
+
+// 	count := 10000
+
+// 	start := time.Now()
+// 	for i := 0; i < count; i++ {
+// 		b, err = json.Marshal(t)
+// 		if err != nil {
+// 			fmt.Println("json.Marshal error:", err, b)
+// 			return
+// 		}
+// 	}
+// 	fmt.Println("json.Marshal", time.Since(start))
+
+// 	start = time.Now()
+// 	for i := 0; i < count; i++ {
+// 		var p Config
+// 		err = json.Unmarshal(b, &p)
+// 		if err != nil {
+// 			fmt.Println("json.Unmarshal error:", err)
+// 			return
+// 		}
+// 	}
+
+// 	fmt.Println("json.Unmarshal", time.Since(start))
+
+// 	start = time.Now()
+// 	for i := 0; i < count; i++ {
+// 		b, err = kson.Marshal(t)
+// 		if err != nil {
+// 			fmt.Println("kson.Marshal error", err, b)
+// 			break
+// 		}
+// 	}
+
+// 	fmt.Println("kson.Marshal", time.Since(start))
+
+// 	start = time.Now()
+// 	for i := 0; i < count; i++ {
+// 		var p Config
+// 		err = kson.Unmarshal(b, &p)
+// 		if err != nil {
+// 			fmt.Println("kson.Unmarshal error", err)
+// 			break
+// 		}
+// 	}
+
+// 	fmt.Println("kson.Unmarshal", time.Since(start))
+// }

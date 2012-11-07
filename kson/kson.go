@@ -4,13 +4,15 @@
 package kson
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"github.com/sdming/kiss/gotype"
 	"reflect"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
-	"fmt"
 )
 
 const (
@@ -69,6 +71,17 @@ type NodeNotExistsError struct {
 
 func (e *NodeNotExistsError) Error() string {
 	return e.Name + " is not exists"
+}
+
+// Child return child node by name, ok is false if name doesn't exist
+func (n *Node) MustChild(name string) *Node {
+	if n.Type == NodeHash {
+		child, ok := n.Hash[name]
+		if ok {
+			return child
+		}
+	}
+	panic("child is not exists:" + name)
 }
 
 // Child return child node by name, ok is false if name doesn't exist
@@ -323,6 +336,9 @@ func (n *Node) setArray(v reflect.Value) {
 
 func (n *Node) setMap(v reflect.Value) {
 
+	// fmt.Println("setmap", nameOfNodeType(n.Type), v.Type(), v.Kind())
+	// fmt.Println(n.Dump())
+
 	kind := v.Kind()
 	if n.Type != NodeHash || kind != reflect.Map {
 		return
@@ -351,6 +367,7 @@ func (n *Node) setMap(v reflect.Value) {
 	elemType := typ.Elem()
 	elemKind := elemType.Kind()
 	simple := gotype.IsSimple(elemKind)
+
 	for name, x := range n.Hash {
 		if simple && x.Type == NodeLiteral {
 			mapElem, err := gotype.Atok(x.Literal, elemKind)
@@ -358,8 +375,14 @@ func (n *Node) setMap(v reflect.Value) {
 				v.SetMapIndex(reflect.ValueOf(name), mapElem)
 			}
 		} else {
-			mapElem := reflect.New(elemType)
+			var mapElem reflect.Value
+			if elemType.Kind() == reflect.Ptr {
+				mapElem = reflect.New(elemType.Elem())
+			} else {
+				mapElem = reflect.New(elemType)
+			}
 			x.set(mapElem)
+			v.SetMapIndex(reflect.ValueOf(name), mapElem)
 		}
 	}
 }
@@ -406,12 +429,6 @@ func (n *Node) setObject(v reflect.Value) {
 		} else {
 			filedNode.set(fv)
 		}
-		// } else if filedNode.Type == NodeLiteral && kind == reflect.Ptr && gotype.IsSimple(field.Type.Elem().Kind()) {
-		// 	if fv.IsNil() {
-		// 		fv.Set(reflect.New(field.Type.Elem()))
-		// 	}
-		// 	gotype.Value(reflect.Indirect(fv)).Parse(filedNode.Literal)
-		// } 
 	}
 
 }
@@ -421,6 +438,9 @@ func (n *Node) set(v reflect.Value) {
 	// if !v.CanSet() || !v.IsValid() {
 	// 	return
 	// }
+
+	// fmt.Println("set==", nameOfNodeType(n.Type), v.Type(), v.Kind())
+	// fmt.Println(n.Dump())
 
 	kind := v.Kind()
 	switch {
@@ -449,5 +469,78 @@ func (n *Node) set(v reflect.Value) {
 		n.set(v.Elem())
 	default:
 		//TODO:
+	}
+}
+
+func (n *Node) dumpto(w *indentWriter) {
+	switch n.Type {
+	case NodeNone:
+		return
+	case NodeLiteral:
+		//w.WriteIndent()
+		w.WriteString(n.Literal)
+	case NodeList:
+		w.WriteString("[")
+		w.WriteString("\n")
+		w.Inner()
+		for _, child := range n.List {
+			w.WriteIndent()
+			child.dumpto(w)
+			w.WriteString("\n")
+		}
+		w.Outer()
+		w.WriteIndent()
+		w.WriteString("]")
+	case NodeHash:
+		w.WriteString("{")
+		w.WriteString("\n")
+		w.Inner()
+
+		names := make([]string, 0, len(n.Hash))
+		for name, _ := range n.Hash {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+
+		for _, name := range names {
+			child := n.Hash[name]
+			w.WriteIndent()
+			w.WriteString(name)
+			w.WriteString(":")
+			child.dumpto(w)
+			w.WriteString("\n")
+		}
+		w.Outer()
+		w.WriteIndent()
+		w.WriteString("}")
+	}
+}
+
+// Dump return dump of node as string
+func (n *Node) Dump() string {
+	w := &indentWriter{Indent: "\t"}
+	n.dumpto(w)
+	return string(w.Bytes())
+}
+
+type indentWriter struct {
+	bytes.Buffer
+	Deep   int
+	Indent string
+}
+
+func (w *indentWriter) Outer() {
+	if w.Deep > 0 {
+		w.Deep--
+	}
+}
+
+func (w *indentWriter) Inner() {
+	w.Deep++
+}
+
+func (w *indentWriter) WriteIndent() {
+	for i := 0; i < w.Deep; i++ {
+		w.WriteString(w.Indent)
 	}
 }
