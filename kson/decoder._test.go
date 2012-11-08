@@ -235,43 +235,8 @@ func TestParseHash(t *testing.T) {
 }
 
 func TestParseConfig(t *testing.T) {
-	config := `
-	{	
-		Log_Level:	debug
-		Listen:		8000
+	config := defaultConfigString
 
-		Roles: [
-			{
-				Name:	user
-				Allow:	[
-					/user		
-					/order
-				]
-			} 
-			{
-				Name:	*				
-				Deny: 	[
-					/user
-					/order
-				]
-			} 
-		]
-
-		Db_Log:	{
-			Driver:		mysql			
-			Host: 		127.0.0.1
-			User:		user
-			Password:	password
-			Database:	log
-		}
-
-		Env:	{
-			auth:		http://auth.io
-			browser:	ie, chrome, firefox, safari
-			key:
-		}
-	}	
-	`
 	n, err := kson.Parse([]byte(config))
 	t.Log(n)
 	if err != nil {

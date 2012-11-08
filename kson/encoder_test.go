@@ -110,36 +110,7 @@ func TestMarshalSimpleType(t *testing.T) {
 }
 
 func TestMarshalConfig(t *testing.T) {
-	config := &Config{
-		Log_Level: "debug",
-		Listen:    8000,
-		Roles: []Role{
-			Role{
-				Name: "user",
-				Allow: []string{
-					"/user",
-					"/order"},
-			},
-			Role{
-				Name: "*",
-				Deny: []string{
-					"/user",
-					"/order"},
-			},
-		},
-		Db_Log: Db{
-			Driver:   "mysql",
-			Host:     "127.0.0.1",
-			User:     "user",
-			Password: "Password",
-			Database: "log",
-		},
-		Env: map[string]string{
-			"auth":    `http://auth.io`,
-			"browser": "ie, chrome, firefox, safari",
-		},
-	}
-
+	config := defaultConfig
 	b, err := kson.Marshal(config)
 	t.Log(string(b))
 	if err != nil {

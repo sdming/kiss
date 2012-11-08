@@ -8,7 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/sdming/kiss/gotype"
+	"io"
+	"io/ioutil"
 	"reflect"
+	"regexp"
 	"runtime"
 	"sort"
 	"strconv"
@@ -27,6 +30,8 @@ const (
 	NodeHash
 	NodeList
 )
+
+var commentsReg *regexp.Regexp = regexp.MustCompile(`^[\s]*#`)
 
 func nameOfNodeType(typ int) string {
 	switch typ {
@@ -89,6 +94,29 @@ func (n *Node) Child(name string) (child *Node, ok bool) {
 	if n.Type == NodeHash {
 		child, ok = n.Hash[name]
 		return
+	}
+	return
+}
+
+// Query return child node by path, just like query
+func (n *Node) Query(path string) (child *Node, ok bool) {
+	names := strings.Split(path, " ")
+	if names == nil || len(names) == 0 {
+		return child, false
+	}
+
+	current := n
+	for _, name := range names {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			continue
+		}
+
+		if child, ok = current.Child(name); !ok {
+			return
+		} else {
+			current = child
+		}
 	}
 	return
 }
@@ -264,6 +292,46 @@ func (n *Node) String() (s string, err error) {
 		return
 	}
 	return n.Literal, nil
+}
+
+// Slice returns []string.
+func (n *Node) Slice() (data []string, err error) {
+	if n.Type != NodeList {
+		err = &InvalidNodeTypeError{n.Type}
+		return
+	}
+
+	data = make([]string, 0, len(n.List))
+	if n.List == nil {
+		return
+	}
+
+	for _, child := range n.List {
+		if child.Type == NodeLiteral {
+			data = append(data, child.Literal)
+		}
+	}
+	return data, nil
+}
+
+// Map returns map[string]string
+func (n *Node) Map() (data map[string]string, err error) {
+	if n.Type != NodeHash {
+		err = &InvalidNodeTypeError{n.Type}
+		return
+	}
+
+	data = make(map[string]string, len(n.Hash))
+	if n.Hash == nil {
+		return
+	}
+
+	for name, value := range n.Hash {
+		if value.Type == NodeLiteral {
+			data[name] = value.Literal
+		}
+	}
+	return
 }
 
 // Value unmarshal data to the value pointed to by a.
@@ -543,4 +611,45 @@ func (w *indentWriter) WriteIndent() {
 	for i := 0; i < w.Deep; i++ {
 		w.WriteString(w.Indent)
 	}
+}
+
+// ParseFile parse a file, remove any line start with #(comments), add {\} auto at begin and end
+func ParseFile(filename string) (node *Node, err error) {
+
+	var f []byte
+	if f, err = ioutil.ReadFile(filename); err != nil {
+		return
+	}
+
+	buff := bytes.NewBuffer(f)
+	var data bytes.Buffer
+	data.WriteString("{\n")
+
+	for {
+		var line []byte
+		end := false
+
+		if line, err = buff.ReadBytes('\n'); err != nil {
+			if err != io.EOF {
+				return
+			} else {
+				end = true
+			}
+		}
+
+		if commentsReg.Match(line) {
+			continue
+		}
+		if _, err = data.Write(line); err != nil {
+			return
+		}
+
+		if end {
+			break
+		}
+	}
+
+	data.WriteString("\n}\n")
+	node, err = Parse(data.Bytes())
+	return
 }
