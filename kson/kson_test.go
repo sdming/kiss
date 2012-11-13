@@ -4,7 +4,7 @@
 package kson_test
 
 import (
-	//"encoding/json"
+	"encoding/json"
 	"github.com/sdming/kiss/kson"
 	"testing"
 )
@@ -134,37 +134,49 @@ var defaultConfigString string = `
 func BenchmarkMarshal(b *testing.B) {
 
 	config := defaultConfig
-	_, err := kson.Marshal(config)
-	if err != nil {
-		b.Error(err)
+
+	for i := 0; i < b.N; i++ {
+		_, err := kson.Marshal(config)
+		if err != nil {
+			b.Error(err)
+		}
 	}
+
 }
 
 func BenchmarkUnmarshal(b *testing.B) {
 	var data string = defaultConfigString
 	var newConfig Config
-	err := kson.Unmarshal([]byte(data), &newConfig)
-	if err != nil {
-		b.Error("config unmarshal error", err)
+	for i := 0; i < b.N; i++ {
+		err := kson.Unmarshal([]byte(data), &newConfig)
+		if err != nil {
+			b.Error("config unmarshal error", err)
+		}
 	}
+
 }
 
-// func BenchmarkJsonMarshal(b *testing.B) {
+func BenchmarkJsonMarshal(b *testing.B) {
 
-// 	config := defaultConfig
-// 	_, err := json.Marshal(config)
-// 	if err != nil {
-// 		b.Error(err)
-// 	}
-// }
+	config := defaultConfig
+	for i := 0; i < b.N; i++ {
+		_, err := json.Marshal(config)
+		if err != nil {
+			b.Error(err)
+		}
+	}
 
-// var defaultJsonConfingString = `{"Log_Level":"debug","Listen":8000,"Roles":[{"Name":"user","Allow":["/user","/order"],"Deny":null},{"Name":"*","Allow":null,"Deny":["/user","/order"]}],"Db_Log":{"Driver":"mysql","Host":"127.0.0.1","User":"user","Password":"Password","Database":"log"},"Env":{"auth":"http://auth.io","browser":"ie, chrome, firefox, safari"}}`
+}
 
-// func BenchmarkJsonUnmarshal(b *testing.B) {
-// 	var data string = defaultJsonConfingString
-// 	var newConfig Config
-// 	err := json.Unmarshal([]byte(data), &newConfig)
-// 	if err != nil {
-// 		b.Error("config unmarshal error", err)
-// 	}
-// }
+var defaultJsonConfingString = `{"Log_Level":"debug","Listen":8000,"Roles":[{"Name":"user","Allow":["/user","/order"],"Deny":null},{"Name":"*","Allow":null,"Deny":["/user","/order"]}],"Db_Log":{"Driver":"mysql","Host":"127.0.0.1","User":"user","Password":"Password","Database":"log"},"Env":{"auth":"http://auth.io","browser":"ie, chrome, firefox, safari"}}`
+
+func BenchmarkJsonUnmarshal(b *testing.B) {
+	var data string = defaultJsonConfingString
+	var newConfig Config
+	for i := 0; i < b.N; i++ {
+		err := json.Unmarshal([]byte(data), &newConfig)
+		if err != nil {
+			b.Error("config unmarshal error", err)
+		}
+	}
+}

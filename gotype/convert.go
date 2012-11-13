@@ -223,10 +223,14 @@ func ToMap(input reflect.Value) map[string]reflect.Value {
 	output := make(map[string]reflect.Value, count)
 
 	for i := 0; i < count; i++ {
-		name := typ.Field(i).Name
-		v := input.FieldByName(name)
+		f := typ.Field(i)
+		if f.PkgPath != "" {
+			continue
+		}
+
+		v := input.FieldByName(f.Name)
 		if v.IsValid() {
-			output[name] = v
+			output[f.Name] = v
 		}
 	}
 	return output

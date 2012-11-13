@@ -281,6 +281,9 @@ func MethodByNameFold(v reflect.Value, name string) (m reflect.Value, ok bool) {
 	typ := v.Type()
 	for i := 0; i < typ.NumMethod(); i++ {
 		method := typ.Method(i)
+		if method.PkgPath != "" {
+			continue
+		}
 		if strings.EqualFold(method.Name, name) {
 			return MethodByName(v, method.Name)
 		}
@@ -295,9 +298,13 @@ func Fields(typ reflect.Type) []string {
 	}
 
 	count := typ.NumField()
-	names := make([]string, count)
+	names := make([]string, 0, count)
 	for i := 0; i < count; i++ {
-		names[i] = typ.Field(i).Name
+		f := typ.Field(i)
+		if f.PkgPath != "" {
+			continue
+		}
+		names = append(names, f.Name)
 	}
 	return names
 }

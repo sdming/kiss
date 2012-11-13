@@ -1,7 +1,7 @@
 // Copyright 2012 by sdm. All rights reserved.
 // license that can be found in the LICENSE file.
 
-package ktest
+package ttype
 
 type AliasInt int
 type AliasUint uint
@@ -87,7 +87,7 @@ type SimpleType struct {
 	A_alias_string_p *AliasString
 }
 
-func newSimpleType() SimpleType {
+func NewSimpleType() SimpleType {
 	t := SimpleType{
 		A_uint8:    8,
 		A_uint16:   16,
