@@ -9,6 +9,33 @@ import (
 	"testing"
 )
 
+/*
+	cpuprofile := "cpu.pprof"
+	if cpuprofile != "" {
+		f, err := os.Create(cpuprofile)
+		if err != nil {
+			fmt.Println("create cpu pprof file error", err)
+			return
+		}
+		fmt.Println("write pprof file", cpuprofile)
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+
+
+memprofile := "mem.pprof"
+	if memprofile != "" {
+		f, err := os.Create(memprofile)
+		if err != nil {
+			fmt.Println(err)
+		}
+		pprof.WriteHeapProfile(f)
+		f.Close()
+		return
+	}
+
+*/
+
 type T1 struct {
 	T1_string string
 	T1_int    int
